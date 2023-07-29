@@ -2,18 +2,11 @@
   <div class="index-wrapper">
     <div class="list-wrapper">
       <div class="power-list-wrapper">
-        <div class="title-power-list">
-          <p>Strøm</p>
-        </div>
+        <div class="title-power-list"></div>
         <powerlist />
       </div>
       <div class="weather-list-wrapper">
-        <div class="title-weather-list">
-          <p>Været</p>
-        </div>
-        <div class="searchbar-wrapper">
-          <searchbar />
-        </div>
+        <div class="title-weather-list"></div>
         <weatherlist />
       </div>
     </div>
@@ -21,7 +14,6 @@
 </template>
 
 <script setup>
-import searchbar from '../components/defaults/searchbar.vue'
 import weatherlist from '../components/weathercomponents/weatherlist.vue'
 import powerlist from '../components/power-components/powerlist.vue'
 </script>
@@ -42,10 +34,12 @@ import powerlist from '../components/power-components/powerlist.vue'
   align-items: center;
   max-width: 100%;
   width: 100%;
+  background-color: #f9f9f9;
 }
 
 .list-wrapper {
   display: flex;
+  flex-direction: column-reverse;
   justify-content: space-between;
   align-items: center;
   width: 100%;
@@ -55,9 +49,7 @@ import powerlist from '../components/power-components/powerlist.vue'
 .weather-list-wrapper {
   display: flex;
   flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  width: 50%;
+  width: 100%;
 }
 
 @media screen and (max-width: 768px) {
