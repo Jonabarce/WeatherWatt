@@ -14,22 +14,9 @@
             "
             class="btn"
           >
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              height="24"
-              viewBox="0 -960 960 960"
-              width="24"
-            >
-              <path
-                :class="{
-                  'icon-yellow': isFavorited(city),
-                  'icon-gray': !isFavorited(city)
-                }"
-                d="m323-205 157-94 157 95-42-178 138-120-182-16-71-168-71 167-182 16 138 120-42 178ZM233-80l65-281L80-550l288-25 112-265 112 265 288 25-218 189 65 281-247-149L233-80Zm247-355Z"
-              />
-            </svg>
+            <img :src="getWeatherIcon(city)" alt="Weather Icon" />
           </button>
-          <span class="city-name">{{ city }}</span>
+          <span class="city-name">{{ city }} ({{ getTemperature(city) }}°C)</span>
         </div>
       </div>
     </div>
@@ -37,19 +24,15 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import axios from 'axios'
 import useCookieStore from '/stores/cityStore'
 import searchbar from '@/components/defaults/searchbar.vue'
 
-onMounted(async () => {
-  for (const city of allCities) {
-    await getWeather(city)
-  }
-})
 
-const allCities = ['Oslo', 'Bergen', 'Stavanger', 'Trondheim', 'Tromsø', 'Bodø']
+const allCities = ['Oslo', 'Bergen', 'Stavanger', 'Trondheim', 'Tromsø', 'Tokyo']
 const { favorites, addFavorite, removeFavorite, isFavorited } = useCookieStore()
+
 
 const nonFavoritedCities = computed(() => {
   return allCities.filter((city) => !favorites.value.includes(city))
@@ -62,30 +45,174 @@ const allCitiesOrdered = computed(() => {
 const weatherCache = ref({})
 
 onMounted(async () => {
-  for (const city of allCities) {
-    await geocode(city)
-  }
-})
+  const geocodePromises = allCitiesOrdered.value.map(city => geocode(city));
+  await Promise.all(geocodePromises);
+});
 
 async function geocode(city) {
+  const url = `https://nominatim.openstreetmap.org/search?city=${city}&format=json`;
   try {
-    const response = await axios.get(
-      `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent('oslo')}&limit=1`
-    )
-
-    if (!response.data || response.data.length === 0) {
-      console.error(`Kunne ikke hente geokoding for byen: ${city}`)
-      return
+    const response = await axios.get(url);
+    if (response.data && response.data[0]) {
+      const { lat, lon } = response.data[0];
+      await fetchWeather(city, lon, lat);
+    } else {
+      console.log(`Ingen data funnet for ${city}`);
     }
-
-    const { lat, lon } = response.data[0]
-    console.log(`Koordinater for ${city}: lat = ${parseFloat(lat)}, lon = ${parseFloat(lon)}`)
   } catch (error) {
-    console.error(`Noe gikk galt ved henting av koordinater for byen ${city}:`, error)
+    console.error(`En feil oppstod under geokoding for ${city}:`, error);
   }
 }
 
+
+
+async function fetchWeather(city, lon, lat) {
+  const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`;
+  try {
+    const response = await axios.get(url);
+    const weather = response.data;
+    console.log(weather);
+
+    if (weather.properties.timeseries && weather.properties.timeseries.length > 0) {
+      const currentTimeUTC = new Date().getTime();
+
+      const sortedTimeseries = weather.properties.timeseries.sort((a, b) => {
+        return Math.abs(new Date(a.time).getTime() - currentTimeUTC) - Math.abs(new Date(b.time).getTime() - currentTimeUTC);
+      });
+
+      const closestTimeseries = sortedTimeseries[0];
+
+      const instantData = closestTimeseries.data.instant.details;
+      const next1HourData = closestTimeseries.data.next_1_hours;
+
+      weatherCache.value[city] = {
+        air_temperature: instantData.air_temperature,
+        symbol_code: next1HourData.summary.symbol_code
+      };
+    } else {
+      console.error(`Ingen timeseries-data funnet for ${city}`);
+    }
+  } catch (error) {
+    console.error(`En feil oppstod under værhenting for ${city}:`, error);
+  }
+}
+
+
+
+
+
+
+function mapWeatherIcon(symbol_code) {
+  const mapping = {
+    'clearsky_day': '01d',
+    'clearsky_night': '01n',
+    'clearsky_polartwilight': '01m',
+    'fair_day': '02d',
+    'fair_night': '02n',
+    'fair_polartwilight': '02m',
+    'partlycloudy_day': '03d',
+    'partlycloudy_night': '03n',
+    'partlycloudy_polartwilight': '03m',
+    'cloudy': '04',
+    'rainshowers_day': '05d',
+    'rainshowers_night': '05n',
+    'rainshowers_polartwilight': '05m',
+    'rainshowersandthunder_day': '06d',
+    'rainshowersandthunder_night': '06n',
+    'rainshowersandthunder_polartwilight': '06m',
+    'sleetshowers_day': '07d',
+    'sleetshowers_night': '07n',
+    'sleetshowers_polartwilight': '07m',
+    'snowshowers_day': '08d',
+    'snowshowers_night': '08n',
+    'snowshowers_polartwilight': '08m',
+    'rain': '09',
+    'heavyrain': '10',
+    'heavyrainandthunder': '11',
+    'sleet': '12',
+    'snow': '13',
+    'snowandthunder': '14',
+    'fog': '15',
+    'sleetshowersandthunder_day': '20d',
+    'sleetshowersandthunder_night': '20n',
+    'sleetshowersandthunder_polartwilight': '20m',
+    'snowshowersandthunder_day': '21d',
+    'snowshowersandthunder_night': '21n',
+    'snowshowersandthunder_polartwilight': '21m',
+    'rainandthunder': '22',
+    'sleetandthunder': '23',
+    'lightrainshowersandthunder_day': '24d',
+    'lightrainshowersandthunder_night': '24n',
+    'lightrainshowersandthunder_polartwilight': '24m',
+    'heavyrainshowersandthunder_day': '25d',
+    'heavyrainshowersandthunder_night': '25n',
+    'heavyrainshowersandthunder_polartwilight': '25m',
+    'lightssleetshowersandthunder_day': '26d',
+    'lightssleetshowersandthunder_night': '26n',
+    'lightssleetshowersandthunder_polartwilight': '26m',
+    'heavysleetshowersandthunder_day': '27d',
+    'heavysleetshowersandthunder_night': '27n',
+    'heavysleetshowersandthunder_polartwilight': '27m',
+    'lightssnowshowersandthunder_day': '28d',
+    'lightssnowshowersandthunder_night': '28n',
+    'lightssnowshowersandthunder_polartwilight': '28m',
+    'heavysnowshowersandthunder_day': '29d',
+    'heavysnowshowersandthunder_night': '29n',
+    'heavysnowshowersandthunder_polartwilight': '29m',
+    'custom_weather_condition_1_day': '30d',
+    'custom_weather_condition_1_night': '30n',
+    'custom_weather_condition_1_polartwilight': '30m',
+    'custom_weather_condition_2_day': '31d',
+    'custom_weather_condition_2_night': '31n',
+    'custom_weather_condition_2_polartwilight': '31m',
+    'heavysleetandthunder': '32',
+    'lightsnowandthunder': '33',
+    'heavysnowandthunder': '34',
+    'lightrainshowers_day': '40d',
+    'lightrainshowers_night': '40n',
+    'lightrainshowers_polartwilight': '40m',
+    'heavyrainshowers_day': '41d',
+    'heavyrainshowers_night': '41n',
+    'heavyrainshowers_polartwilight': '41m',
+    'lightsleetshowers_day': '42d',
+    'lightsleetshowers_night': '42n',
+    'lightsleetshowers_polartwilight': '42m',
+    'heavysleetshowers_day': '43d',
+    'heavysleetshowers_night': '43n',
+    'heavysleetshowers_polartwilight': '43m',
+    'lightsnowshowers_day': '44d',
+    'lightsnowshowers_night': '44n',
+    'lightsnowshowers_polartwilight': '44m',
+    'heavysnowshowers_day': '45d',
+    'heavysnowshowers_night': '45n',
+    'heavysnowshowers_polartwilight': '45m',
+    'lightrain': '46',
+    'lightsleet': '47',
+    'heavysleet': '48',
+    'lightsnow': '49',
+    'heavysnow': '50',
+  };
+  return mapping[symbol_code];
+}
+
+function getWeatherIcon(city) {
+  const weatherData = weatherCache.value[city];
+  if (weatherData) {
+    const iconCode = mapWeatherIcon(weatherData.symbol_code);
+    return `public/pictures/weatherIcons/${iconCode}.svg`;
+  }
+  return 'default-icon.png';
+}
+
+function getTemperature(city) {
+  const weatherData = weatherCache.value[city];
+  if (weatherData) {
+    return weatherData.air_temperature;
+  }
+  return null;
+}
 </script>
+
 
 <style scoped>
 .the-wrapper-div-weather-list {
