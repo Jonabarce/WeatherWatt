@@ -69,6 +69,7 @@ onMounted(fetchData)
   display: flex;
   flex-direction: column;
   width: 85%;
+  margin-bottom: 3rem;
 }
 
 .power-wrapper {

@@ -107,7 +107,12 @@ watch(searchText, () => {
   performSearch()
 })
 
-function toggleFavorite(city) {
+function getCityName(displayName) {
+  return displayName.split(',')[0];
+}
+
+function toggleFavorite(displayName) {
+  const city = getCityName(displayName);
   if (cityFavorites[city]) {
     removeFavorite(city);
   } else {
