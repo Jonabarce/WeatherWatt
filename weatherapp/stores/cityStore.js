@@ -19,8 +19,14 @@ export default function useCookieStore() {
   }
 
   function isFavorited(city) {
+    console.log(favorites.value.includes(city))
     return favorites.value.includes(city)
   }
 
-  return { favorites, addFavorite, removeFavorite, isFavorited }
+  function clearFavorites() {
+    Cookies.remove('favorites')
+    favorites.value = []
+  }
+
+  return { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites}
 }

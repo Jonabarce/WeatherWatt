@@ -12,7 +12,8 @@
   "devDependencies": {
     "@nuxt/devtools": "latest",
     "@types/node": "^18",
-    "nuxt": "^3.5.2"
+    "nuxt": "^3.5.2",
+    "nuxt-icon": "^0.4.2"
   },
   "dependencies": {
     "autoprefixer": "^10.4.14",
