@@ -6,21 +6,35 @@ export default function useCookieStore() {
     Cookies.get('favorites') ? JSON.parse(Cookies.get('favorites')) : []
   )
 
-  function addFavorite(city) {
-    if (!favorites.value.includes(city)) {
+  function addFavorite(cityData) {
+    const city = {
+      display_name: cityData.display_name,
+      lat: cityData.lat,
+      lon: cityData.lon,
+      name: cityData.name
+    }
+
+    const index = favorites.value.findIndex(
+      (favCity) => favCity.display_name === city.display_name
+    )
+
+    if (index === -1) {
       favorites.value.push(city)
       Cookies.set('favorites', JSON.stringify(favorites.value))
     }
   }
 
-  function removeFavorite(city) {
-    favorites.value = favorites.value.filter((favCity) => favCity !== city)
+  function removeFavorite(display_name) {
+    favorites.value = favorites.value.filter(
+      (favCity) => favCity.display_name !== display_name
+    )
     Cookies.set('favorites', JSON.stringify(favorites.value))
   }
 
-  function isFavorited(city) {
-    console.log(favorites.value.includes(city))
-    return favorites.value.includes(city)
+  function isFavorited(display_name) {
+    return favorites.value.some(
+      (favCity) => favCity.display_name === display_name
+    )
   }
 
   function clearFavorites() {
@@ -28,5 +42,5 @@ export default function useCookieStore() {
     favorites.value = []
   }
 
-  return { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites}
+  return { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites }
 }

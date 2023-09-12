@@ -14,34 +14,29 @@
     </div>
     <div v-for="result in searchResults" :key="result.place_id" class="city">
   <span>
-    <button
-      @click="toggleFavorite(result.display_name)"
-      class="btn"
-    >
+    <button @click="toggleFavorite(result)" class="btn">
       <Icon
         class="star-icon"
         color="#ff9d00"
-        :name="cityFavorites[result.display_name] ? 'ph:star-fill' : 'ph:star-duotone'"
+        :name="isFavorited(result.display_name) ? 'ph:star-fill' : 'ph:star-duotone'"
       />
-    </button>{{ result.display_name }}
+    </button>
+    {{ result.display_name }}
   </span>
 </div>
     <br />
     <div class="the-weather-list-wrapper">
       <div class="cities">
         <div v-for="city in allCitiesOrdered" :key="city" class="city">
-          <button
-          @click="cityFavorites[city] ? removeFavorite(city) : addFavorite(city); cityFavorites[city] = !cityFavorites[city]"
-            class="btn"
-          >
-            <Icon
-              class="star-icon"
-              color="#ff9d00"
-              :name="cityFavorites[city] ? 'ph:star-fill' : 'ph:star-duotone'"
-            />
-            <img :src="getWeatherIcon(city)" alt="Weather Icon" />
-          </button>
-          <span class="city-name">{{ city }} {{ getTemperature(city) }}°C</span>
+          <button @click="toggleFavorite(city)" class="btn">
+  <Icon
+    class="star-icon"
+    color="#ff9d00"
+    :name="isFavorited(city.display_name) ? 'ph:star-fill' : 'ph:star-duotone'"
+  />
+  <img :src="getWeatherIcon(city)" alt="Weather Icon" />
+</button>
+          <span class="city-name">{{ city.display_name }} {{ getTemperature(city) }}°C</span>
         </div>
       </div>
     </div>
@@ -55,7 +50,6 @@ import axios from 'axios'
 import useCookieStore from '/stores/cityStore'
 import { debounce } from 'lodash'
 
-const cityFavorites = reactive({})
 const searchText = ref('')
 const searchResults = ref([])
 
@@ -83,7 +77,7 @@ onMounted(async () => {
     cityFavorites[city] = favorites.value.includes(city)
   }, [])
 
-  const geocodePromises = allCitiesOrdered.value.map((city) => geocode(city))
+  const geocodePromises = allCitiesOrdered.value.map((city) => getInfoAboutCity(city))
   await Promise.all(geocodePromises)
 })
 
@@ -107,40 +101,22 @@ watch(searchText, () => {
   performSearch()
 })
 
-function getCityName(displayName) {
-  return displayName.split(',')[0];
-}
 
-function toggleFavorite(displayName) {
-  const city = getCityName(displayName);
-  if (cityFavorites[city]) {
-    removeFavorite(city);
+function toggleFavorite(cityData) {
+  if (isFavorited(cityData.display_name)) {
+    removeFavorite(cityData.display_name);
   } else {
-    addFavorite(city);
-  }
-  cityFavorites[city] = !cityFavorites[city];
-}
-
-async function geocode(city) {
-  console.log(`Geokoder ${city}`);
-  const encodedCity = encodeURIComponent(city);
-  const url = `https://nominatim.openstreetmap.org/search?city=${encodedCity}&format=json`;
-  try {
-    const response = await axios.get(url);
-    console.log(response.data);
-    if (response.data && response.data[0]) {
-      const { lat, lon } = response.data[0];
-      await fetchWeather(city, lon, lat);
-    } else {
-      console.log(`Ingen data funnet for ${city}`);
-    }
-  } catch (error) {
-    console.error(`En feil oppstod under geokoding for ${city}:`, error);
+    addFavorite(cityData);
+    fetchWeather(cityData);
   }
 }
 
-async function fetchWeather(city, lon, lat) {
-  const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${lat}&lon=${lon}`
+async function getInfoAboutCity(city) {
+    await fetchWeather(city);
+}
+
+async function fetchWeather(city) {
+  const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${city.lat}&lon=${city.lon}`
   try {
     const response = await axios.get(url)
     const weather = response.data
@@ -284,6 +260,7 @@ function getTemperature(city) {
   }
   return null
 }
+
 </script>
 
 <style scoped>
