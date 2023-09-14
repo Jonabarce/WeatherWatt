@@ -1,7 +1,6 @@
 <template>
   <div class="the-wrapper-div-weather-list">
     <h1>Været</h1>
-    <button @click="clearFavorites()"></button>
     <div class="searchbar-wrapper">
       <input
         class="the-searchbar"
@@ -18,7 +17,7 @@
       <Icon
         class="star-icon"
         color="#ff9d00"
-        :name="isFavorited(result.display_name) ? 'ph:star-fill' : 'ph:star-duotone'"
+        :name="isFavorited(result.place_id) ? 'ph:star-fill' : 'ph:star-duotone'"
       />
     </button>
     {{ result.display_name }}
@@ -27,15 +26,15 @@
     <br />
     <div class="the-weather-list-wrapper">
       <div class="cities">
-        <div v-for="city in allCitiesOrdered" :key="city" class="city">
+        <div v-for="city in favorites" :key="city.place_id" class="city" @click="selectCityAndRoute(city)" >
           <button @click="toggleFavorite(city)" class="btn">
-  <Icon
-    class="star-icon"
-    color="#ff9d00"
-    :name="isFavorited(city.display_name) ? 'ph:star-fill' : 'ph:star-duotone'"
-  />
-  <img :src="getWeatherIcon(city)" alt="Weather Icon" />
-</button>
+            <Icon
+              class="star-icon"
+              color="#ff9d00"
+              :name="isFavorited(city.place_id) ? 'ph:star-fill' : 'ph:star-duotone'"
+            />
+            <img :src="getWeatherIcon(city)" alt="Weather Icon" />
+          </button>
           <span class="city-name">{{ city.display_name }} {{ getTemperature(city) }}°C</span>
         </div>
       </div>
@@ -48,38 +47,32 @@ import { ref, computed, onMounted } from 'vue'
 import { watch, reactive } from 'vue'
 import axios from 'axios'
 import useCookieStore from '/stores/cityStore'
+import useCurrentCityStore from '/stores/currentCity'
+import { useRouter } from 'vue-router'
+
 import { debounce } from 'lodash'
 
 const searchText = ref('')
 const searchResults = ref([])
+const router = useRouter()
 
-const allCities = []
+
 const { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites } = useCookieStore()
+const { setCurrent } = useCurrentCityStore()
 
 const weatherCache = ref({})
 
-const nonFavoritedCities = computed(() => {
-  return allCities.filter((city) => !favorites.value.includes(city))
-})
+onMounted(() => {
+  console.log(favorites.value)
+  favorites.value.forEach(city => {
+    fetchWeather(city);
+  });
+});
 
-const allCitiesOrdered = computed(() => {
-  return [...favorites.value, ...nonFavoritedCities.value]
-})
+onBeforeUnmount(() => {
+  weatherCache.value = {};
+});
 
-watch(favorites, () => {
-  allCities.forEach((city) => {
-    cityFavorites[city] = favorites.value.includes(city)
-  })
-})
-
-onMounted(async () => {
-  allCities.forEach((city) => {
-    cityFavorites[city] = favorites.value.includes(city)
-  }, [])
-
-  const geocodePromises = allCitiesOrdered.value.map((city) => getInfoAboutCity(city))
-  await Promise.all(geocodePromises)
-})
 
 const performSearch = debounce(async () => {
   if (!searchText.value) {
@@ -101,19 +94,27 @@ watch(searchText, () => {
   performSearch()
 })
 
+function selectCityAndRoute(city) {
+  setCurrent(city)
+  router.push("/WeatherPlace")
+}
+
+
 
 function toggleFavorite(cityData) {
-  if (isFavorited(cityData.display_name)) {
-    removeFavorite(cityData.display_name);
+  if (isFavorited(cityData.place_id)) {
+    console.log('removing favorite' + cityData.place_id)
+    removeFavorite(cityData.place_id);
+    if(weatherCache.value[cityData.place_id]) {
+      delete weatherCache.value[cityData.place_id];
+    }
   } else {
     addFavorite(cityData);
     fetchWeather(cityData);
   }
 }
 
-async function getInfoAboutCity(city) {
-    await fetchWeather(city);
-}
+
 
 async function fetchWeather(city) {
   const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${city.lat}&lon=${city.lon}`
@@ -139,10 +140,13 @@ async function fetchWeather(city) {
       const instantData = closestTimeseries.data.instant.details
       const next1HourData = closestTimeseries.data.next_1_hours
 
-      weatherCache.value[city] = {
+      weatherCache.value[city.place_id] = {
         air_temperature: instantData.air_temperature,
         symbol_code: next1HourData.summary.symbol_code
       }
+
+      console.log(weatherCache.value)
+
     } else {
       console.error(`Ingen timeseries-data funnet for ${city}`)
     }
@@ -245,7 +249,7 @@ function mapWeatherIcon(symbol_code) {
 }
 
 function getWeatherIcon(city) {
-  const weatherData = weatherCache.value[city]
+  const weatherData = weatherCache.value[city.place_id];
   if (weatherData) {
     const iconCode = mapWeatherIcon(weatherData.symbol_code)
     return `/pictures/weatherIcons/${iconCode}.svg`
@@ -254,7 +258,7 @@ function getWeatherIcon(city) {
 }
 
 function getTemperature(city) {
-  const weatherData = weatherCache.value[city]
+  const weatherData = weatherCache.value[city.place_id];
   if (weatherData) {
     return weatherData.air_temperature
   }
@@ -303,6 +307,12 @@ function getTemperature(city) {
   border-radius: 1.7rem;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   width: 95%;
+
+}
+
+.city:hover {
+  background-color: #e9e9e9;
+  cursor: pointer;
 }
 
 .city img {

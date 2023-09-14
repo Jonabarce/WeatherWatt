@@ -11,30 +11,29 @@ export default function useCookieStore() {
       display_name: cityData.display_name,
       lat: cityData.lat,
       lon: cityData.lon,
-      name: cityData.name
+      name: cityData.name,
+      place_id: cityData.place_id
     }
 
-    const index = favorites.value.findIndex(
-      (favCity) => favCity.display_name === city.display_name
-    )
+    const index = favorites.value.findIndex(favCity => favCity.place_id === city.place_id);
 
     if (index === -1) {
-      favorites.value.push(city)
-      Cookies.set('favorites', JSON.stringify(favorites.value))
+      favorites.value.push(city);
+      Cookies.set('favorites', JSON.stringify(favorites.value));
     }
   }
 
-  function removeFavorite(display_name) {
-    favorites.value = favorites.value.filter(
-      (favCity) => favCity.display_name !== display_name
-    )
-    Cookies.set('favorites', JSON.stringify(favorites.value))
+  function removeFavorite(placeId) {
+    const index = favorites.value.findIndex(city => city.place_id === placeId);
+
+    if (index !== -1) {
+      favorites.value.splice(index, 1);
+      Cookies.set('favorites', JSON.stringify(favorites.value));
+    }
   }
 
-  function isFavorited(display_name) {
-    return favorites.value.some(
-      (favCity) => favCity.display_name === display_name
-    )
+  function isFavorited(placeId) {
+    return favorites.value.some(city => city.place_id === placeId);
   }
 
   function clearFavorites() {

@@ -3,5 +3,7 @@ export default defineNuxtConfig({
   ssr: true,
   devtools: { enabled: true },
   css: ['~/assets/css/main.css', '~/assets/css/global.css'],
-  modules: ['nuxt-icon']
+  modules: ['nuxt-icon'],
+
+
 })
