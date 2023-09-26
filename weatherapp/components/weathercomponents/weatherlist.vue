@@ -11,18 +11,26 @@
         v-model="searchText"
       />
     </div>
-    <div id="cityResult" v-for="result in searchResults" :key="result.place_id" class="city" @click="selectCityAndRoute(result)">
+    <div
+      id="cityResult"
+      v-for="result in searchResults"
+      :key="result.place_id"
+      class="city"
+      @click="selectCityAndRoute(result)"
+    >
       <span>
-          <button @click.stop="toggleFavorite(result)" class="btn">
-              <Icon
-                  class="star-icon"
-                  color="#ff9d00"
-                  :name="isFavorited(result.place_id) ? 'ph:star-fill' : 'ph:star-duotone'"
-              />
-          </button>
-          <p>{{ result.display_name }}</p>
+        <button @click.stop="toggleFavorite(result)" class="btn">
+          <Icon
+            class="star-icon"
+            color="#ff9d00"
+            :name="
+              isFavorited(result.place_id) ? 'ph:star-fill' : 'ph:star-duotone'
+            "
+          />
+        </button>
+        <p>{{ result.display_name }}</p>
       </span>
-  </div>
+    </div>
     <br />
     <div class="the-weather-list-wrapper">
       <div class="cities">
@@ -311,13 +319,13 @@ function getTemperature(city) {
   width: 95%;
 }
 
-#cityResult{
+#cityResult {
   width: 80%;
   display: flex;
   flex-direction: row;
 }
 
-#cityResult:hover{
+#cityResult:hover {
   background-color: #e9e9e9;
   cursor: pointer;
 }

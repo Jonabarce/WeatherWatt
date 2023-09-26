@@ -46,11 +46,15 @@
         v-for="dayData in futureWeatherData"
         :key="dayData[0].time"
       >
-      <p id="dateP">
-    {{ new Date(dayData[0].time).toLocaleDateString('nb-NO') }}
-    <br>
-    {{ new Date(dayData[0].time).toLocaleDateString('nb-NO', { weekday: 'long' }) }}
-</p>
+        <p id="dateP">
+          {{ new Date(dayData[0].time).toLocaleDateString('nb-NO') }}
+          <br />
+          {{
+            new Date(dayData[0].time).toLocaleDateString('nb-NO', {
+              weekday: 'long'
+            })
+          }}
+        </p>
         <div class="weatherIcons">
           <div class="weatherIconsEnter">
             <img
@@ -99,22 +103,26 @@
         </div>
       </div>
     </div>
-    <div v-if="showModal" class="modal">
-      <div
-        class="modalData"
-        v-for="hourData in selectedDayData"
-        :key="hourData.time"
-      >
-        <p>{{ formatLocalTime(hourData.time) }}</p>
-        <img
-          :src="'/pictures/weatherIcons/' + getWeatherIcon(hourData) + '.svg'"
-          alt=""
-        />
-        <p>{{ hourData.data.instant.details.air_temperature }}°C</p>
-        <p>{{ hourData.data.instant.details.wind_speed }}m/s</p>
-        <p>{{ getCurrentPrecipitationamount(hourData) }}mm</p>
+    <div v-if="showModal">
+      <div class="modal-overlay" @click="closeModal"></div>
+
+      <div class="modal">
+        <div
+          class="modalData"
+          v-for="hourData in selectedDayData"
+          :key="hourData.time"
+        >
+          <p>{{ formatLocalTime(hourData.time) }}</p>
+          <img
+            :src="'/pictures/weatherIcons/' + getWeatherIcon(hourData) + '.svg'"
+            alt=""
+          />
+          <p>{{ hourData.data.instant.details.air_temperature }}°C</p>
+          <p>{{ hourData.data.instant.details.wind_speed }}m/s</p>
+          <p>{{ getCurrentPrecipitationamount(hourData) }}mm</p>
+        </div>
+        <button @click="closeModal">Lukk</button>
       </div>
-      <button @click="closeModal">Lukk</button>
     </div>
   </div>
 </template>
@@ -159,13 +167,21 @@ function shouldDisplayIcon(dayData, timeOfDay) {
   }
 }
 
-function closeModal() {
-  showModal.value = false
-}
-
 function openModal(dayData) {
   selectedDayData.value = dayData
   showModal.value = true
+}
+
+watch(showModal, (newValue) => {
+  if (newValue) {
+    document.body.style.overflow = 'hidden'
+  } else {
+    document.body.style.overflow = ''
+  }
+})
+
+const closeModal = () => {
+  showModal.value = false
 }
 
 function consoleLog(data) {
@@ -452,6 +468,16 @@ function mapWeatherIcon(symbol_code) {
   border-bottom: 1px grey solid;
 }
 
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  z-index: 99;
+}
+
 .modalData img {
   height: 3rem;
 }
@@ -501,8 +527,6 @@ function mapWeatherIcon(symbol_code) {
 .weatherIcons img {
   height: 3rem;
 }
-
-
 
 .weatherIconsEnter {
   display: flex;
@@ -561,8 +585,8 @@ function mapWeatherIcon(symbol_code) {
 }
 
 #dateP {
-    margin-left: 1rem;
-  }
+  margin-left: 1rem;
+}
 
 .umbrella-icon {
   height: 2rem;
