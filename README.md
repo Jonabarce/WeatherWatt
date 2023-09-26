@@ -18,5 +18,7 @@ I en digital verden med utallige apper for ulike behov, er det et sterkt ønske 
 
 - **Fikse språk**
 - **Fikse grafer for strømprisene basert på dager fram i tid**
+- **Fikse DarkMode**
+- 
 
 
