@@ -8,7 +8,7 @@ export default function useCurrentCityCookieStore() {
 
   watch(currentCity, (newValue) => {
     if (newValue) {
-      Cookies.set('currentCity', JSON.stringify(newValue));
+      Cookies.set('currentCity', JSON.stringify(newValue), { expires: 365 });
     } else {
       Cookies.remove('currentCity');
     }
