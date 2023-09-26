@@ -1,28 +1,18 @@
-import { ref, watch, onMounted } from 'vue'
+import { ref, watch } from 'vue';
+import Cookies from 'js-cookie';
 
-export default function useCurrentCityStore() {
-  const currentCity = ref(null)
+export default function useCurrentCityCookieStore() {
+  const currentCity = ref(
+    Cookies.get('currentCity') ? JSON.parse(Cookies.get('currentCity')) : null
+  );
 
-  onMounted(() => {
-    const storedCity = JSON.parse(
-      sessionStorage.getItem('currentCity') || 'null'
-    )
-    currentCity.value = storedCity
-  })
-
-  watch(
-    currentCity,
-    (newValue) => {
-      if (process.client) {
-        if (newValue) {
-          sessionStorage.setItem('currentCity', JSON.stringify(newValue))
-        } else {
-          sessionStorage.removeItem('currentCity')
-        }
-      }
-    },
-    { deep: true }
-  )
+  watch(currentCity, (newValue) => {
+    if (newValue) {
+      Cookies.set('currentCity', JSON.stringify(newValue));
+    } else {
+      Cookies.remove('currentCity');
+    }
+  }, { deep: true });
 
   function setCurrent(cityData) {
     currentCity.value = {
@@ -31,18 +21,19 @@ export default function useCurrentCityStore() {
       lon: cityData.lon,
       name: cityData.name,
       place_id: cityData.place_id
-    }
+    };
   }
 
   function removeCurrent(placeId) {
     if (currentCity.value && currentCity.value.place_id === placeId) {
-      currentCity.value = null
+      currentCity.value = null;
     }
   }
 
   function clearCurrent() {
-    currentCity.value = null
+    Cookies.remove('currentCity');
+    currentCity.value = null;
   }
 
-  return { currentCity, setCurrent, removeCurrent, clearCurrent }
+  return { currentCity, setCurrent, removeCurrent, clearCurrent };
 }
