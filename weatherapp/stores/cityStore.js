@@ -21,7 +21,7 @@ export default function useCookieStore() {
 
     if (index === -1) {
       favorites.value.push(city)
-      Cookies.set('favorites', JSON.stringify(favorites.value))
+      Cookies.set('favorites', JSON.stringify(favorites.value), { expires: 365 });
     }
   }
 
@@ -30,7 +30,7 @@ export default function useCookieStore() {
 
     if (index !== -1) {
       favorites.value.splice(index, 1)
-      Cookies.set('favorites', JSON.stringify(favorites.value))
+      Cookies.set('favorites', JSON.stringify(favorites.value), { expires: 365 });
     }
   }
 
