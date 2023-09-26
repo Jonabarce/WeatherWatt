@@ -40,7 +40,7 @@
           class="city"
           @click="selectCityAndRoute(city)"
         >
-          <button @click="toggleFavorite(city)" class="btn">
+          <button @click.stop="toggleFavorite(city)" class="btn">
             <Icon
               class="star-icon"
               color="#ff9d00"
@@ -50,9 +50,9 @@
             />
             <img :src="getWeatherIcon(city)" alt="Weather Icon" />
           </button>
-          <span class="city-name"
-            >{{ city.display_name }} {{ getTemperature(city) }}°C</span
-          >
+          <span class="city-name">
+            {{ city.display_name }} {{ getTemperature(city) }}°C
+          </span>
         </div>
       </div>
     </div>
@@ -67,7 +67,8 @@ import useCookieStore from '/stores/cityStore'
 import useCurrentCityStore from '/stores/currentCity'
 import { useRouter } from 'vue-router'
 
-import { debounce } from 'lodash'
+import lodash from 'lodash'
+const { debounce } = lodash
 
 const searchText = ref('')
 const searchResults = ref([])
