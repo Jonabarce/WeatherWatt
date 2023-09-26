@@ -23,20 +23,38 @@
       </div>
     </div>
     <div class="list-of-days">
-  <div v-for="dayData in futureWeatherData" :key="dayData[0].time">
-    <p>{{ new Date(dayData[0].time).toLocaleDateString() }}</p>
-    <div v-for="hourData in dayData" :key="hourData.time">
-      {{ new Date(hourData.time).toLocaleTimeString() }} - 
+    <div @click="openModal(dayData), consoleLog(dayData)" class="futuredays" v-for="dayData in futureWeatherData" :key="dayData[0].time">
+        <p>
+            {{ new Date(dayData[0].time).toLocaleDateString() }}
+        </p>
+        <div class="weatherIcons">
+            <div class="weatherIconsEnter" v-if="shouldDisplayIcon(dayData, 'night')">
+                <img :src="'/pictures/weatherIcons/' + getWeatherIconForTime(dayData, 'night') + '.svg'" alt="Night Icon" />
+            </div>
+            <div class="weatherIconsEnter" v-if="shouldDisplayIcon(dayData, 'morning')">
+                <img :src="'/pictures/weatherIcons/' + getWeatherIconForTime(dayData, 'morning') + '.svg'" alt="Morning Icon" />
+            </div>
+            <div class="weatherIconsEnter" v-if="shouldDisplayIcon(dayData, 'afternoon')">
+                <img :src="'/pictures/weatherIcons/' + getWeatherIconForTime(dayData, 'afternoon') + '.svg'" alt="Afternoon Icon" />
+            </div>
+            <div class="weatherIconsEnter" v-if="shouldDisplayIcon(dayData, 'evening')">
+                <img :src="'/pictures/weatherIcons/' + getWeatherIconForTime(dayData, 'evening') + '.svg'" alt="Evening Icon" />
+            </div>
+        </div>
+        </div>
+    </div>
+    <div v-if="showModal" class="modal">
+    <div v-for="hourData in selectedDayData" :key="hourData.time">
+      <p>{{ formatLocalTime(hourData.time) }}</p>
       {{ hourData.data.instant.details.air_temperature }}°C
     </div>
+    <button @click="closeModal">Lukk</button>
   </div>
-</div>
   </div>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
-import { watch, reactive } from 'vue'
+import {ref,onMounted } from 'vue'
 import axios from 'axios'
 import useCookieStore from '/stores/cityStore'
 import useCurrentCityStore from '/stores/currentCity'
@@ -46,17 +64,64 @@ const currentTemprature = ref('')
 const currentWindSpeed = ref('')
 const currentWeatherIcon = ref('')
 const currentPrecipitationAmount = ref('')
-const upcomingDays = ref([])
 const futureWeatherData = ref([])
-const forecastDays = ref([])
+const showModal = ref(false)
+const selectedDayData = ref([])
+const nightTime = 2;
+const morningTime = 8;
+const afternoonTime = 14;
+const eveningTime = 20;
+
+
+
+function shouldDisplayIcon(dayData, timeOfDay){
+  const currentHour = new Date().getUTCHours();
+    const isToday = new Date(dayData[0].time).toDateString() === new Date().toDateString();
+    
+    if (!isToday) return true;
+
+    switch(timeOfDay) {
+      case 'night':
+        return currentHour < nightTime;
+      case 'morning':
+        return currentHour < morningTime;
+      case 'afternoon':
+        return currentHour < afternoonTime;
+      case 'evening':
+        return currentHour < eveningTime;
+      default:
+        return true;
+    }
+}
+
+
+
+function closeModal() {
+  showModal.value = false
+}
+
+
+function openModal(dayData) {
+  selectedDayData.value = dayData
+  showModal.value = true
+}
+
+
+
+function formatLocalTime(utcTime) {
+      const utcDate = new Date(utcTime);
+      utcDate.setHours(utcDate.getHours() + 2);
+      return utcDate.toISOString().split('T')[1].split(':')[0] + ":00";
+    }
+
+
 
 
 const weatherCache = ref({})
 
 
 
-const { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites } =
-  useCookieStore()
+const { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites } = useCookieStore()
 
 const { currentCity, setCurrentCity, clearCurrent } = useCurrentCityStore()
 
@@ -67,11 +132,14 @@ onMounted(() => {
 })
 
 
+
+
 async function fetchCurrentWeather(city) {
   const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${city.lat}&lon=${city.lon}`
   try {
     const response = await axios.get(url)
     const weather = response.data
+    console.log(weather)
 
     if (
       weather.properties.timeseries &&
@@ -109,49 +177,92 @@ async function fetchCurrentWeather(city) {
 }
 
 
-async function fetchCurrentWindSpeed(){
-
-}
-
-
 
 async function fetchWeatherForwards(city) {
-  const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${city.lat}&lon=${city.lon}`
-  try {
-    const response = await axios.get(url)
-    const weatherData = response.data
-    console.log(weatherData)
+    const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${city.lat}&lon=${city.lon}`;
+    try {
+        const response = await axios.get(url);
+        const weatherData = response.data;
 
-    if (weatherData.properties && weatherData.properties.timeseries) {
-      const groupedByDate = {};
+        if (weatherData.properties && weatherData.properties.timeseries) {
+            const groupedByDate = {};
 
-      for (let timeseries of weatherData.properties.timeseries) {
-        const date = new Date(timeseries.time).toLocaleDateString();
-        if (!groupedByDate[date]) {
-          groupedByDate[date] = [];
+            for (let timeseries of weatherData.properties.timeseries) {
+                const timeseriesDate = new Date(timeseries.time);
+                timeseriesDate.setHours(timeseriesDate.getHours() + 2);
+
+                const dateKey = timeseriesDate.toISOString().split('T')[0];
+
+                if (!groupedByDate[dateKey]) {
+                    groupedByDate[dateKey] = [];
+                }
+                groupedByDate[dateKey].push(timeseries);
+            }
+
+            futureWeatherData.value = Object.values(groupedByDate).slice(0, 9);
+            console.log(futureWeatherData.value);
+        } else {
+            console.error(`Ingen timeseries-data funnet for ${city.name}`);
         }
-        groupedByDate[date].push(timeseries);
-      }
-
-      futureWeatherData.value = Object.values(groupedByDate).slice(0, 9);
-      console.log(futureWeatherData.value)
-    } else {
-      console.error(`Ingen timeseries-data funnet for ${city}`);
+    } catch (error) {
+        console.error(`En feil oppstod under værhenting for ${city.name}:`, error);
     }
-  } catch (error) {
-    console.error(`En feil oppstod under værhenting for ${city}:`, error);
+}
+
+
+
+
+
+
+function getWeatherIconForTime(timeseries, timeOfDay) {
+  const timePoints = timeseries.map(entry => {
+    const hour = new Date(entry.time).getUTCHours();
+    return { hour, entry };
+  });
+
+  const icons = {
+    night: getWeatherIcon(findClosestTime(timePoints, nightTime)),
+    morning: getWeatherIcon(findClosestTime(timePoints, morningTime)),
+    afternoon: getWeatherIcon(findClosestTime(timePoints, afternoonTime)),
+    evening: getWeatherIcon(findClosestTime(timePoints, eveningTime)),
+  };
+
+  return icons[timeOfDay];
+}
+
+function findClosestTime(timePoints, targetHour) {
+  let closestTime = null;
+  let closestDiff = Infinity;
+
+  for (const { hour, entry } of timePoints) {
+    const diff = Math.abs(hour - targetHour);
+    if (diff < closestDiff) {
+      closestTime = entry;
+      closestDiff = diff;
+    }
   }
+
+  return closestTime;
 }
 
+function getWeatherIcon(entry) {
+  if (entry) {
+    let iconCode = null;
 
+    if (entry.data.next_1_hours) {
+      iconCode = mapWeatherIcon(entry.data.next_1_hours.summary.symbol_code);
+    } else if (entry.data.next_6_hours) {
+      iconCode = mapWeatherIcon(entry.data.next_6_hours.summary.symbol_code);
+    } else if (entry.data.next_12_hours) {
+      iconCode = mapWeatherIcon(entry.data.next_12_hours.summary.symbol_code);
+    }
 
-
-async function fetchTempratureForwards() {
-
-}
-
-async function fetchWeatherIconForwards(){
-
+    if (iconCode) {
+      
+      return iconCode
+    }
+  }
+  return null;
 }
 
 
@@ -253,6 +364,52 @@ function mapWeatherIcon(symbol_code) {
 </script>
 
 <style scoped>
+.modal {
+  position: fixed;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 80%;
+  max-height: 80%;
+  background-color: rgba(0, 0, 0, 0.8);
+  display: block;
+  align-items: center;
+  justify-content: center;
+  flex-direction: column;
+  gap: 1rem;
+  color: white;
+  font-size: 2rem;
+  font-weight: bold;
+  z-index: 100;
+  border-radius: 10px;
+  padding: 1rem;
+  box-shadow: 0px 4px 15px rgba(0, 0, 0, 0.2);
+  overflow-y: auto;
+}
+
+
+
+.futuredays {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.weatherIcons {
+  display: flex;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
+
+.weatherIconsEnter {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  gap: 1rem;
+}
 
 .header-currentCity-wrapper{
   display: flex;

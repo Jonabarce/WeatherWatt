@@ -74,6 +74,8 @@ onBeforeUnmount(() => {
 });
 
 
+
+
 const performSearch = debounce(async () => {
   if (!searchText.value) {
     searchResults.value = []
