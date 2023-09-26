@@ -107,6 +107,14 @@
       <div class="modal-overlay" @click="closeModal"></div>
 
       <div class="modal">
+        <div class="modalDataLabel">
+          <p>Tid</p>
+          <p>Vær</p>
+          <p>Temp.</p>
+          <p>Vind</p>
+          <p>Nedbør</p>
+
+        </div>
         <div
           class="modalData"
           v-for="hourData in selectedDayData"
@@ -458,6 +466,17 @@ function mapWeatherIcon(symbol_code) {
 }
 
 .modalData {
+  display: flex;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  height: 35%;
+  border-bottom: 1px grey solid;
+}
+
+.modalDataLabel{
   display: flex;
   flex-direction: row;
   justify-content: space-between;
