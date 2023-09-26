@@ -13,3 +13,10 @@ I en digital verden med utallige apper for ulike behov, er det et sterkt ønske 
 - **Strømpriser fra Benefical Apps**: Hold deg oppdatert på de siste strømprisene uten å forlate nettsiden.
 
 
+
+## Todo
+
+- **Fikse språk**
+- **Fikse grafer for strømprisene basert på dager fram i tid**
+
+
