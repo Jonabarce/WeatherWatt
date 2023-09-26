@@ -7,7 +7,7 @@
       </div>
     </NuxtLink>
   </div>
-</template>
+</template> 
 
 <style scoped>
 .logo-header-wrapper {

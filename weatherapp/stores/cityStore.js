@@ -15,25 +15,27 @@ export default function useCookieStore() {
       place_id: cityData.place_id
     }
 
-    const index = favorites.value.findIndex(favCity => favCity.place_id === city.place_id);
+    const index = favorites.value.findIndex(
+      (favCity) => favCity.place_id === city.place_id
+    )
 
     if (index === -1) {
-      favorites.value.push(city);
-      Cookies.set('favorites', JSON.stringify(favorites.value));
+      favorites.value.push(city)
+      Cookies.set('favorites', JSON.stringify(favorites.value))
     }
   }
 
   function removeFavorite(placeId) {
-    const index = favorites.value.findIndex(city => city.place_id === placeId);
+    const index = favorites.value.findIndex((city) => city.place_id === placeId)
 
     if (index !== -1) {
-      favorites.value.splice(index, 1);
-      Cookies.set('favorites', JSON.stringify(favorites.value));
+      favorites.value.splice(index, 1)
+      Cookies.set('favorites', JSON.stringify(favorites.value))
     }
   }
 
   function isFavorited(placeId) {
-    return favorites.value.some(city => city.place_id === placeId);
+    return favorites.value.some((city) => city.place_id === placeId)
   }
 
   function clearFavorites() {

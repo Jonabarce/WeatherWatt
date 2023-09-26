@@ -11,31 +11,40 @@
         v-model="searchText"
       />
     </div>
-    <div v-for="result in searchResults" :key="result.place_id" class="city">
-  <span>
-    <button @click="toggleFavorite(result)" class="btn">
-      <Icon
-        class="star-icon"
-        color="#ff9d00"
-        :name="isFavorited(result.place_id) ? 'ph:star-fill' : 'ph:star-duotone'"
-      />
-    </button>
-    {{ result.display_name }}
-  </span>
-</div>
+    <div id="cityResult" v-for="result in searchResults" :key="result.place_id" class="city" @click="selectCityAndRoute(result)">
+      <span>
+          <button @click.stop="toggleFavorite(result)" class="btn">
+              <Icon
+                  class="star-icon"
+                  color="#ff9d00"
+                  :name="isFavorited(result.place_id) ? 'ph:star-fill' : 'ph:star-duotone'"
+              />
+          </button>
+          <p>{{ result.display_name }}</p>
+      </span>
+  </div>
     <br />
     <div class="the-weather-list-wrapper">
       <div class="cities">
-        <div v-for="city in favorites" :key="city.place_id" class="city" @click="selectCityAndRoute(city)" >
+        <div
+          v-for="city in favorites"
+          :key="city.place_id"
+          class="city"
+          @click="selectCityAndRoute(city)"
+        >
           <button @click="toggleFavorite(city)" class="btn">
             <Icon
               class="star-icon"
               color="#ff9d00"
-              :name="isFavorited(city.place_id) ? 'ph:star-fill' : 'ph:star-duotone'"
+              :name="
+                isFavorited(city.place_id) ? 'ph:star-fill' : 'ph:star-duotone'
+              "
             />
             <img :src="getWeatherIcon(city)" alt="Weather Icon" />
           </button>
-          <span class="city-name">{{ city.display_name }} {{ getTemperature(city) }}°C</span>
+          <span class="city-name"
+            >{{ city.display_name }} {{ getTemperature(city) }}°C</span
+          >
         </div>
       </div>
     </div>
@@ -56,25 +65,22 @@ const searchText = ref('')
 const searchResults = ref([])
 const router = useRouter()
 
-
-const { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites } = useCookieStore()
+const { favorites, addFavorite, removeFavorite, isFavorited, clearFavorites } =
+  useCookieStore()
 const { setCurrent } = useCurrentCityStore()
 
 const weatherCache = ref({})
 
 onMounted(() => {
   console.log(favorites.value)
-  favorites.value.forEach(city => {
-    fetchWeather(city);
-  });
-});
+  favorites.value.forEach((city) => {
+    fetchWeather(city)
+  })
+})
 
 onBeforeUnmount(() => {
-  weatherCache.value = {};
-});
-
-
-
+  weatherCache.value = {}
+})
 
 const performSearch = debounce(async () => {
   if (!searchText.value) {
@@ -98,25 +104,21 @@ watch(searchText, () => {
 
 function selectCityAndRoute(city) {
   setCurrent(city)
-  router.push("/WeatherPlace")
+  router.push('/WeatherPlace')
 }
-
-
 
 function toggleFavorite(cityData) {
   if (isFavorited(cityData.place_id)) {
     console.log('removing favorite' + cityData.place_id)
-    removeFavorite(cityData.place_id);
-    if(weatherCache.value[cityData.place_id]) {
-      delete weatherCache.value[cityData.place_id];
+    removeFavorite(cityData.place_id)
+    if (weatherCache.value[cityData.place_id]) {
+      delete weatherCache.value[cityData.place_id]
     }
   } else {
-    addFavorite(cityData);
-    fetchWeather(cityData);
+    addFavorite(cityData)
+    fetchWeather(cityData)
   }
 }
-
-
 
 async function fetchWeather(city) {
   const url = `https://api.met.no/weatherapi/locationforecast/2.0/compact?lat=${city.lat}&lon=${city.lon}`
@@ -148,7 +150,6 @@ async function fetchWeather(city) {
       }
 
       console.log(weatherCache.value)
-
     } else {
       console.error(`Ingen timeseries-data funnet for ${city}`)
     }
@@ -251,7 +252,7 @@ function mapWeatherIcon(symbol_code) {
 }
 
 function getWeatherIcon(city) {
-  const weatherData = weatherCache.value[city.place_id];
+  const weatherData = weatherCache.value[city.place_id]
   if (weatherData) {
     const iconCode = mapWeatherIcon(weatherData.symbol_code)
     return `/pictures/weatherIcons/${iconCode}.svg`
@@ -260,13 +261,12 @@ function getWeatherIcon(city) {
 }
 
 function getTemperature(city) {
-  const weatherData = weatherCache.value[city.place_id];
+  const weatherData = weatherCache.value[city.place_id]
   if (weatherData) {
     return weatherData.air_temperature
   }
   return null
 }
-
 </script>
 
 <style scoped>
@@ -309,7 +309,17 @@ function getTemperature(city) {
   border-radius: 1.7rem;
   box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
   width: 95%;
+}
 
+#cityResult{
+  width: 80%;
+  display: flex;
+  flex-direction: row;
+}
+
+#cityResult:hover{
+  background-color: #e9e9e9;
+  cursor: pointer;
 }
 
 .city:hover {
